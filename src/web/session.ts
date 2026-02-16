@@ -105,6 +105,24 @@ export async function createWaSocket(
   maybeRestoreCredsFromBackup(authDir);
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
   const { version } = await fetchLatestBaileysVersion();
+
+  // Build proxy agent from HTTPS_PROXY / HTTP_PROXY env vars if set.
+  // Uses https-proxy-agent (already a dependency) for HTTP CONNECT tunneling.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let agent: any;
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+  if (proxyUrl) {
+    try {
+      const { HttpsProxyAgent } = await import("https-proxy-agent");
+      agent = new HttpsProxyAgent(proxyUrl);
+      sessionLogger.info(
+        `Using proxy agent for WhatsApp WebSocket: ${proxyUrl.replace(/\/\/.*@/, "//***@")}`,
+      );
+    } catch (err) {
+      sessionLogger.warn({ err }, "Failed to create proxy agent, connecting directly");
+    }
+  }
+
   const sock = makeWASocket({
     auth: {
       creds: state.creds,
@@ -116,6 +134,7 @@ export async function createWaSocket(
     browser: ["openclaw", "cli", VERSION],
     syncFullHistory: false,
     markOnlineOnConnect: false,
+    agent,
   });
 
   sock.ev.on("creds.update", () => enqueueSaveCreds(authDir, saveCreds, sessionLogger));
