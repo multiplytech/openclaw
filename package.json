@@ -1,6 +1,6 @@
 {
   "name": "@multiplytech/openclaw",
-  "version": "2026.2.15-pairing-code.3",
+  "version": "2026.2.15-pairing-code.4",
   "description": "Multi-channel AI gateway with extensible messaging integrations",
   "keywords": [],
   "license": "MIT",
@@ -159,6 +159,7 @@
     "qrcode-terminal": "^0.12.0",
     "sharp": "^0.34.5",
     "signal-utils": "^0.21.1",
+    "socks-proxy-agent": "^8.0.0",
     "sqlite-vec": "0.1.7-alpha.2",
     "tar": "7.5.7",
     "tslog": "^4.10.2",
