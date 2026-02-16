@@ -125,9 +125,9 @@ export async function createWaSocket(
         const { HttpsProxyAgent } = await import("https-proxy-agent");
         agent = new HttpsProxyAgent(proxyUrl);
       }
-      sessionLogger.info(
-        `Using proxy agent for WhatsApp WebSocket: ${proxyUrl.replace(/\/\/.*@/, "//***@")}`,
-      );
+      const maskedUrl = proxyUrl.replace(/\/\/.*@/, "//***@");
+      sessionLogger.info(`Using proxy agent for WhatsApp WebSocket: ${maskedUrl}`);
+      console.error(`[wa-session] Proxy agent created: ${maskedUrl}`);
     } catch (err) {
       sessionLogger.warn({ err }, "Failed to create proxy agent, connecting directly");
       // Also log to stderr so it's visible in login.out
@@ -155,6 +155,10 @@ export async function createWaSocket(
     (update: Partial<import("@whiskeysockets/baileys").ConnectionState>) => {
       try {
         const { connection, lastDisconnect, qr } = update;
+        // Log all connection events to stderr for diagnostics
+        console.error(
+          `[wa-session] connection.update: connection=${connection ?? "undefined"}, qr=${qr ? "yes" : "no"}, lastDisconnect=${lastDisconnect ? JSON.stringify({ statusCode: getStatusCode(lastDisconnect.error), message: lastDisconnect.error instanceof Error ? lastDisconnect.error.message : JSON.stringify(lastDisconnect.error) }) : "none"}`,
+        );
         if (qr) {
           opts.onQr?.(qr);
           if (printQr) {
@@ -184,6 +188,7 @@ export async function createWaSocket(
   // Handle WebSocket-level errors to prevent unhandled exceptions from crashing the process
   if (sock.ws && typeof (sock.ws as unknown as { on?: unknown }).on === "function") {
     sock.ws.on("error", (err: Error) => {
+      console.error(`[wa-session] WebSocket error: ${String(err)}`);
       sessionLogger.error({ error: String(err) }, "WebSocket error");
     });
   }
