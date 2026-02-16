@@ -7,6 +7,7 @@ import {
 } from "@whiskeysockets/baileys";
 import { randomUUID } from "node:crypto";
 import fsSync from "node:fs";
+import { createRequire } from "node:module";
 import qrcode from "qrcode-terminal";
 import { formatCliCommand } from "../cli/command-format.js";
 import { danger, success } from "../globals.js";
@@ -114,8 +115,11 @@ export async function createWaSocket(
   if (proxyUrl) {
     try {
       if (proxyUrl.startsWith("socks")) {
-        const socksModule = "socks-proxy-agent";
-        const { SocksProxyAgent } = await import(/* webpackIgnore: true */ socksModule);
+        // Use createRequire for reliable resolution from bundled code.
+        // Dynamic import() can't resolve node_modules from the bundled dist/ path.
+        const esmRequire = createRequire(import.meta.url);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { SocksProxyAgent } = esmRequire("socks-proxy-agent");
         agent = new SocksProxyAgent(proxyUrl);
       } else {
         const { HttpsProxyAgent } = await import("https-proxy-agent");
@@ -126,6 +130,8 @@ export async function createWaSocket(
       );
     } catch (err) {
       sessionLogger.warn({ err }, "Failed to create proxy agent, connecting directly");
+      // Also log to stderr so it's visible in login.out
+      console.error(`[wa-session] Failed to create proxy agent: ${String(err)}`);
     }
   }
 
