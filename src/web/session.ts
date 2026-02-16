@@ -110,7 +110,7 @@ export async function createWaSocket(
   // Supports socks5:// (SocksProxyAgent) and http(s):// (HttpsProxyAgent).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let agent: any;
-  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+  const proxyUrl = process.env.WA_PROXY_URL || process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
   if (proxyUrl) {
     try {
       if (proxyUrl.startsWith("socks")) {
