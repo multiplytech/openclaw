@@ -64,13 +64,12 @@ export async function loginWeb(
     const normalizedPhone = phoneNumber.replace(/^\+/, "");
     logInfo(`Requesting pairing code for ${phoneNumber}...`, runtime);
 
-    // Wait for socket to initialize before requesting pairing code.
-    // Baileys needs to complete the WebSocket handshake before requestPairingCode works.
-    // We wait for the first connection.update event which indicates the socket is ready.
-    await sock.waitForConnectionUpdate(
-      async () => true, // Accept first update (socket initialized)
-      PAIRING_CODE_INIT_TIMEOUT_MS,
-    );
+    // Wait for the QR event before requesting a pairing code.
+    // The QR event signals that the noise protocol handshake is complete and
+    // Baileys is ready to accept pairing requests. Using `async () => true`
+    // accepts the initial "connecting" event which is too early — Baileys
+    // returns 428 Precondition Required if requestPairingCode is called then.
+    await sock.waitForConnectionUpdate(async (update) => !!update.qr, PAIRING_CODE_INIT_TIMEOUT_MS);
 
     try {
       const code = await sock.requestPairingCode(normalizedPhone);
